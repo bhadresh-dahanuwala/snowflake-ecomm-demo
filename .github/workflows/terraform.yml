@@ -20,7 +20,7 @@ env:
   # Snowflake Credentials
   SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
   SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+  SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
   # SNOWFLAKE_ROLE is optional but recommended if your service user isn't default ACCOUNTADMIN
   SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }} 
 
