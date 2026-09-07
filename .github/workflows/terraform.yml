@@ -1,0 +1,66 @@
+name: "Terraform CI/CD"
+
+on:
+  push:
+    branches:
+      - dev
+      - prod
+  pull_request:
+    branches:
+      - dev
+      - prod
+
+env:
+  # Azure Credentials
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+  
+  # Snowflake Credentials
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+  SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+  # SNOWFLAKE_ROLE is optional but recommended if your service user isn't default ACCOUNTADMIN
+  SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }} 
+
+jobs:
+  terraform:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Determine Environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/prod" || "${{ github.base_ref }}" == "prod" ]]; then
+            echo "env_name=prod" >> $GITHUB_OUTPUT
+          else
+            echo "env_name=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Init
+        working-directory: terraform/environments/${{ steps.env.outputs.env_name }}
+        run: terraform init
+
+      - name: Terraform Format Check
+        working-directory: terraform/environments/${{ steps.env.outputs.env_name }}
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        working-directory: terraform/environments/${{ steps.env.outputs.env_name }}
+        if: github.event_name == 'pull_request'
+        run: terraform plan
+
+      - name: Terraform Apply
+        working-directory: terraform/environments/${{ steps.env.outputs.env_name }}
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve
