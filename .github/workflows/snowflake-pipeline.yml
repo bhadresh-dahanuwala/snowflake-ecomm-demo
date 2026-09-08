@@ -1,0 +1,46 @@
+name: 'Snowflake Data Pipeline'
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'snowflake/**'
+      - '.github/workflows/snowflake-pipeline.yml'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'snowflake/**'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-pipeline:
+    name: 'Deploy Dynamic Tables via Snowflake CLI'
+    runs-on: ubuntu-latest
+    
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      SNOWFLAKE_ROLE: ACCOUNTADMIN
+      SNOWFLAKE_WAREHOUSE: ECOMM_DEV_WH
+      SNOWFLAKE_DATABASE: ECOMM_DEV
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install Snowflake CLI
+      uses: Snowflake-Labs/snowflake-cli-action@v1.5
+      with:
+        cli-version: "latest"
+
+    - name: Verify Snowflake Connection
+      run: snow connection test
+
+    - name: Deploy Staging Layer (Dynamic Tables)
+      if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+      run: snow sql -f snowflake/staging/dynamic_tables.sql

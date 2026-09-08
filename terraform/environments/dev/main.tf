@@ -31,4 +31,11 @@ resource "snowflake_schema" "analytics" {
   comment  = "Dimensions and facts layer"
 }
 
-# TODO: Add Storage Integration, External Stage, Snowpipe, Roles and Permissions
+# 3. Create a Virtual Warehouse for Compute (Required for Dynamic Tables and CLI)
+resource "snowflake_warehouse" "ecomm_dev_wh" {
+  name           = "ECOMM_DEV_WH"
+  warehouse_size = "X-SMALL"
+  auto_suspend   = 60
+  auto_resume    = true
+  comment        = "Compute warehouse for dev environment transformations"
+}
