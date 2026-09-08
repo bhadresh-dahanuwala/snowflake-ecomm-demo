@@ -9,7 +9,7 @@ resource "snowflake_database" "ecomm_dev" {
 resource "snowflake_warehouse" "ecomm_dev_wh" {
   name           = "ECOMM_DEV_WH"
   warehouse_size = "X-SMALL"
-  auto_suspend   = 300
+  auto_suspend   = 60
   auto_resume    = true
   comment        = "Compute warehouse for dev environment transformations"
 }
