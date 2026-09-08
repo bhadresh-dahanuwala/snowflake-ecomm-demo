@@ -16,47 +16,40 @@ resource "snowflake_storage_integration" "adls_integration" {
   ]
 }
 
-# 2. File Format (Assuming CSV for now, adjust to Parquet/JSON if needed)
-resource "snowflake_file_format" "csv_format" {
-  name        = "CSV_FORMAT"
-  database    = snowflake_database.ecomm_dev.name
-  schema      = snowflake_schema.raw.name
-  format_type = "CSV"
+# 2. File Formats
+resource "snowflake_file_format" "json_format" {
+  name              = "JSON_FORMAT"
+  database          = snowflake_database.ecomm_dev.name
+  schema            = snowflake_schema.raw.name
+  format_type       = "JSON"
+  strip_outer_array = true
+}
 
+resource "snowflake_file_format" "csv_format" {
+  name                         = "CSV_FORMAT"
+  database                     = snowflake_database.ecomm_dev.name
+  schema                       = snowflake_schema.raw.name
+  format_type                  = "CSV"
   skip_header                  = 1
   field_optionally_enclosed_by = "\""
 }
 
-# 3. External Stage pointing to the ADLS Gen2 container
+# 3. External Stage pointing to the ADLS Gen2 container (No specific format attached)
 resource "snowflake_stage" "adls_stage" {
   name                = "ADLS_RAW_STAGE"
   database            = snowflake_database.ecomm_dev.name
   schema              = snowflake_schema.raw.name
   url                 = "azure://stecommbddev.blob.core.windows.net/raw/"
   storage_integration = snowflake_storage_integration.adls_integration.name
-  file_format         = "FORMAT_NAME = ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_file_format.csv_format.name}"
 }
 
-# 4. Target Table in the RAW schema
-# Note: Adjust columns based on the actual schema of your data/20260801 files.
-resource "snowflake_table" "raw_data_table" {
-  name     = "RAW_DATA"
-  database = snowflake_database.ecomm_dev.name
-  schema   = snowflake_schema.raw.name
-
-  column {
-    name = "RAW_VARIANT"
-    type = "VARIANT"
-  }
-}
-
-# 5. Azure Storage Queue for Snowpipe Event Grid Notifications
+# 4. Azure Storage Queue for Snowpipe Event Grid Notifications
 resource "azurerm_storage_queue" "snowpipe_queue" {
   name                 = "snowpipedevqueue"
   storage_account_name = "stecommbddev"
 }
 
-# 6. Notification Integration in Snowflake
+# 5. Notification Integration in Snowflake
 resource "snowflake_notification_integration" "azure_notification" {
   name    = "AZURE_DEV_NOTIFICATION_INTEGRATION"
   type    = "QUEUE"
@@ -67,9 +60,39 @@ resource "snowflake_notification_integration" "azure_notification" {
   azure_tenant_id                 = data.azurerm_client_config.current.tenant_id
 }
 
-# 7. Snowpipe to automatically ingest data from the Stage to the Table
-resource "snowflake_pipe" "auto_ingest_pipe" {
-  name     = "RAW_DATA_PIPE"
+# 6. RAW JSON Tables and Pipes (Iterating over entities)
+locals {
+  raw_json_tables = [
+    "customers",
+    "orders",
+    "products",
+    "return_items",
+    "returns",
+    "order_items"
+  ]
+}
+
+resource "snowflake_table" "raw_json_tables" {
+  for_each = toset(local.raw_json_tables)
+
+  name     = "RAW_${upper(each.key)}"
+  database = snowflake_database.ecomm_dev.name
+  schema   = snowflake_schema.raw.name
+
+  column {
+    name = "RAW_DATA"
+    type = "VARIANT"
+  }
+  column {
+    name = "METADATA_FILENAME"
+    type = "VARCHAR"
+  }
+}
+
+resource "snowflake_pipe" "raw_json_pipes" {
+  for_each = toset(local.raw_json_tables)
+
+  name     = "RAW_${upper(each.key)}_PIPE"
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
@@ -77,7 +100,72 @@ resource "snowflake_pipe" "auto_ingest_pipe" {
   integration = snowflake_notification_integration.azure_notification.name
 
   copy_statement = <<EOF
-COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.raw_data_table.name}
+COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.raw_json_tables[each.key].name} (RAW_DATA, METADATA_FILENAME)
+FROM (
+  SELECT $1, METADATA$FILENAME
+  FROM @${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_stage.adls_stage.name}
+)
+FILE_FORMAT = (FORMAT_NAME = '${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_file_format.json_format.name}')
+PATTERN = '.*${each.key}.*\\.json'
+EOF
+}
+
+# 7. DATES CSV Table and Pipe (Infrequent load)
+resource "snowflake_table" "raw_dates" {
+  name     = "RAW_DATES"
+  database = snowflake_database.ecomm_dev.name
+  schema   = snowflake_schema.raw.name
+
+  column {
+    name = "DATE_KEY"
+    type = "NUMBER"
+  }
+  column {
+    name = "FULL_DATE"
+    type = "DATE"
+  }
+  column {
+    name = "DAY_OF_WEEK"
+    type = "NUMBER"
+  }
+  column {
+    name = "DAY_OF_MONTH"
+    type = "NUMBER"
+  }
+  column {
+    name = "MONTH"
+    type = "NUMBER"
+  }
+  column {
+    name = "MONTH_NAME"
+    type = "VARCHAR"
+  }
+  column {
+    name = "QUARTER"
+    type = "NUMBER"
+  }
+  column {
+    name = "YEAR"
+    type = "NUMBER"
+  }
+  column {
+    name = "IS_WEEKEND"
+    type = "BOOLEAN"
+  }
+}
+
+resource "snowflake_pipe" "raw_dates_pipe" {
+  name     = "RAW_DATES_PIPE"
+  database = snowflake_database.ecomm_dev.name
+  schema   = snowflake_schema.raw.name
+
+  auto_ingest = true
+  integration = snowflake_notification_integration.azure_notification.name
+
+  copy_statement = <<EOF
+COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.raw_dates.name}
 FROM @${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_stage.adls_stage.name}
+FILE_FORMAT = (FORMAT_NAME = '${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_file_format.csv_format.name}')
+PATTERN = '.*dates\\.csv'
 EOF
 }
