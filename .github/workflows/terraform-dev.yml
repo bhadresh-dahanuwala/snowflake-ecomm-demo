@@ -1,0 +1,68 @@
+name: 'Terraform Dev'
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-dev.yml'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'terraform/**'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-dev:
+    name: 'Terraform Apply - Dev Environment'
+    runs-on: ubuntu-latest
+    
+    # Optional: If you use GitHub Environments, you can uncomment this to require approvals for deployment
+    # environment: dev
+
+    env:
+      # Azure Credentials
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      
+      # Snowflake Credentials
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      # Make sure to also add these to your GitHub secrets if they aren't there yet
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+
+    # We will organize Terraform code with separate environment directories
+    defaults:
+      run:
+        working-directory: ./terraform/environments/dev
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.9.0"
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Format
+      run: terraform fmt -check
+      continue-on-error: true
+
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -out=tfplan -input=false
+
+    - name: Terraform Apply
+      # Only run apply on pushes to the dev branch, not on Pull Requests
+      if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+      run: terraform apply -auto-approve -input=false tfplan
