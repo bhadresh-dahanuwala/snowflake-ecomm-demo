@@ -94,7 +94,8 @@ resource "azurerm_eventgrid_event_subscription" "snowpipe_subscription" {
   scope = data.azurerm_storage_account.adls.id
 
   storage_queue_endpoint {
-    queue_id = azurerm_storage_queue.snowpipe_queue.resource_manager_id
+    storage_account_id = data.azurerm_storage_account.adls.id
+    queue_name         = azurerm_storage_queue.snowpipe_queue.name
   }
 
   included_event_types = ["Microsoft.Storage.BlobCreated"]
