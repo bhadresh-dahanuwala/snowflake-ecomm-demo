@@ -31,6 +31,8 @@ SELECT
       WHEN PAYLOAD:id IS NULL OR TRY_CAST(PAYLOAD:id::VARCHAR AS NUMBER) IS NULL THEN TRUE
       WHEN PAYLOAD:first_name IS NULL OR TRY_CAST(PAYLOAD:first_name::VARCHAR AS VARCHAR) IS NULL THEN TRUE
       WHEN PAYLOAD:last_name IS NULL OR TRY_CAST(PAYLOAD:last_name::VARCHAR AS VARCHAR) IS NULL THEN TRUE
+      -- Mandatory Array check (Must exist AND must be a JSON array)
+      WHEN PAYLOAD:addresses IS NULL OR NOT IS_ARRAY(PAYLOAD:addresses) THEN TRUE
       -- Optional fields
       WHEN PAYLOAD:email IS NOT NULL AND TRY_CAST(PAYLOAD:email::VARCHAR AS VARCHAR) IS NULL THEN TRUE
       ELSE FALSE
@@ -59,7 +61,8 @@ SELECT
         END
     ) AS has_invalid_address
 FROM ECOMM_DEV.RAW.RAW_DATA,
-LATERAL FLATTEN(input => PAYLOAD:addresses, outer => TRUE) f
+-- Type-safe flatten: If it's not an array, feed it an empty array so it doesn't crash the pipeline
+LATERAL FLATTEN(input => IFF(IS_ARRAY(PAYLOAD:addresses), PAYLOAD:addresses, ARRAY_CONSTRUCT()), outer => TRUE) f
 WHERE FILE_NAME LIKE '%customers.json%'
 GROUP BY FILE_NAME, LOADED_AT, raw_id;
 
