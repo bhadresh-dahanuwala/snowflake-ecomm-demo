@@ -22,7 +22,8 @@ terraform {
 provider "snowflake" {
   # SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, and SNOWFLAKE_PRIVATE_KEY 
   # are expected to be provided via environment variables in GitHub Actions.
-  role = "ACCOUNTADMIN"
+  authenticator = "JWT"
+  role          = "ACCOUNTADMIN"
 }
 
 provider "azurerm" {

@@ -20,7 +20,8 @@ terraform {
 }
 
 provider "snowflake" {
-  role = "ACCOUNTADMIN"
+  authenticator = "JWT"
+  role          = "ACCOUNTADMIN"
 }
 
 provider "azurerm" {
