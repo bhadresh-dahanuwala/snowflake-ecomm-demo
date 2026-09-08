@@ -50,13 +50,31 @@ resource "snowflake_table" "raw_data_table" {
   }
 }
 
-# 5. Snowpipe to automatically ingest data from the Stage to the Table
+# 5. Azure Storage Queue for Snowpipe Event Grid Notifications
+resource "azurerm_storage_queue" "snowpipe_queue" {
+  name                 = "snowpipedevqueue"
+  storage_account_name = "stecommbddev"
+}
+
+# 6. Notification Integration in Snowflake
+resource "snowflake_notification_integration" "azure_notification" {
+  name    = "AZURE_DEV_NOTIFICATION_INTEGRATION"
+  type    = "QUEUE"
+  enabled = true
+
+  notification_provider           = "AZURE_STORAGE_QUEUE"
+  azure_storage_queue_primary_uri = "https://stecommbddev.queue.core.windows.net/${azurerm_storage_queue.snowpipe_queue.name}"
+  azure_tenant_id                 = data.azurerm_client_config.current.tenant_id
+}
+
+# 7. Snowpipe to automatically ingest data from the Stage to the Table
 resource "snowflake_pipe" "auto_ingest_pipe" {
   name     = "RAW_DATA_PIPE"
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
   auto_ingest = true
+  integration = snowflake_notification_integration.azure_notification.name
 
   copy_statement = <<EOF
 COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.raw_data_table.name}
