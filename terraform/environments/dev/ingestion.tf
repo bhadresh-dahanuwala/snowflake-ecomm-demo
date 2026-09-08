@@ -75,7 +75,7 @@ locals {
 resource "snowflake_table" "raw_json_tables" {
   for_each = toset(local.raw_json_tables)
 
-  name     = "RAW_${upper(each.key)}"
+  name     = upper(each.key)
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
@@ -92,7 +92,7 @@ resource "snowflake_table" "raw_json_tables" {
 resource "snowflake_pipe" "raw_json_pipes" {
   for_each = toset(local.raw_json_tables)
 
-  name     = "RAW_${upper(each.key)}_PIPE"
+  name     = "${upper(each.key)}_PIPE"
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
@@ -111,8 +111,8 @@ EOF
 }
 
 # 7. DATES CSV Table and Pipe (Infrequent load)
-resource "snowflake_table" "raw_dates" {
-  name     = "RAW_DATES"
+resource "snowflake_table" "dates" {
+  name     = "DATES"
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
@@ -154,8 +154,8 @@ resource "snowflake_table" "raw_dates" {
   }
 }
 
-resource "snowflake_pipe" "raw_dates_pipe" {
-  name     = "RAW_DATES_PIPE"
+resource "snowflake_pipe" "dates_pipe" {
+  name     = "DATES_PIPE"
   database = snowflake_database.ecomm_dev.name
   schema   = snowflake_schema.raw.name
 
@@ -163,7 +163,7 @@ resource "snowflake_pipe" "raw_dates_pipe" {
   integration = snowflake_notification_integration.azure_notification.name
 
   copy_statement = <<EOF
-COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.raw_dates.name}
+COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_table.dates.name}
 FROM @${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_stage.adls_stage.name}
 FILE_FORMAT = (FORMAT_NAME = '${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_file_format.csv_format.name}')
 PATTERN = '.*dates\\.csv'
