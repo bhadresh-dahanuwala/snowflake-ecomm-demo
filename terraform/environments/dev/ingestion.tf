@@ -81,3 +81,25 @@ COPY INTO ${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${sn
 FROM @${snowflake_database.ecomm_dev.name}.${snowflake_schema.raw.name}.${snowflake_stage.adls_stage.name}
 EOF
 }
+
+# 8. Get Existing Storage Account for Event Grid setup
+data "azurerm_storage_account" "adls" {
+  name                = "stecommbddev"
+  resource_group_name = "rg-ecomm-dev"
+}
+
+# 9. Azure Event Grid Subscription to trigger Snowpipe
+resource "azurerm_eventgrid_event_subscription" "snowpipe_subscription" {
+  name  = "snowpipe-dev-subscription"
+  scope = data.azurerm_storage_account.adls.id
+
+  storage_queue_endpoint {
+    queue_id = azurerm_storage_queue.snowpipe_queue.resource_manager_id
+  }
+
+  included_event_types = ["Microsoft.Storage.BlobCreated"]
+
+  subject_filter {
+    subject_begins_with = "/blobServices/default/containers/raw/"
+  }
+}
