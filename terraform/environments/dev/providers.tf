@@ -10,13 +10,13 @@ terraform {
     }
   }
 
-  # TODO: Configure Azure Blob Storage as the backend for Terraform state
-  # backend "azurerm" {
-  #   resource_group_name  = "rg-ecomm-dev"
-  #   storage_account_name = "stecommbddev"
-  #   container_name       = "tfstate"
-  #   key                  = "dev.terraform.tfstate"
-  # }
+  # Configure Azure Blob Storage as the backend for Terraform state
+  backend "azurerm" {
+    resource_group_name  = "rg-ecomm-dev"
+    storage_account_name = "stecommbddev"
+    container_name       = "tfstate"
+    key                  = "dev.terraform.tfstate"
+  }
 }
 
 provider "snowflake" {
