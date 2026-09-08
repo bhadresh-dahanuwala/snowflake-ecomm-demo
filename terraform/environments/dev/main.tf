@@ -6,6 +6,14 @@ resource "snowflake_database" "ecomm_dev" {
   comment = "Database for the e-commerce dev environment"
 }
 
+resource "snowflake_warehouse" "ecomm_dev_wh" {
+  name           = "ECOMM_DEV_WH"
+  warehouse_size = "X-SMALL"
+  auto_suspend   = 300
+  auto_resume    = true
+  comment        = "Compute warehouse for dev environment transformations"
+}
+
 # 2. Create the Database Schemas
 resource "snowflake_schema" "raw" {
   database = snowflake_database.ecomm_dev.name
@@ -23,6 +31,12 @@ resource "snowflake_schema" "intermediate" {
   database = snowflake_database.ecomm_dev.name
   name     = "INTERMEDIATE"
   comment  = "Calculated columns and intermediate transformations layer"
+}
+
+resource "snowflake_schema" "quarantine" {
+  database = snowflake_database.ecomm_dev.name
+  name     = "QUARANTINE"
+  comment  = "Quarantined records failing schema validation"
 }
 
 resource "snowflake_schema" "analytics" {
