@@ -109,9 +109,9 @@ resource "azurerm_eventgrid_event_subscription" "snowpipe_subscription" {
     queue_name         = azurerm_storage_queue.snowpipe_queue.name
   }
 
-  included_event_types = ["Microsoft.Storage.BlobCreated"]
+  included_event_types = ["Microsoft.Storage.BlobCreated", "Microsoft.Storage.BlobRenamed"]
 
   subject_filter {
-    subject_begins_with = "/blobServices/default/containers/raw/"
+    subject_begins_with = "/blobServices/default/containers/raw/blobs/"
   }
 }
