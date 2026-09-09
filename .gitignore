@@ -3,3 +3,12 @@ data/
 req.md
 keys
 temp.md
+.DS_Store
+approaches.pdf
+selected approach.md
+selected_approach.pdf
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars

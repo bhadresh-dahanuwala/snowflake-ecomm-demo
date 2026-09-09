@@ -47,7 +47,12 @@ def process_customers(session):
         F.col("LOADED_AT").alias("raw_loaded_at")
     )
     
-    # df_clean.write.mode("append").save_as_table("ECOMM_DEV.STAGING.CUSTOMERS")
+    df_clean.create_or_replace_dynamic_table(
+        name="ECOMM_DEV.STAGING.CUSTOMERS",
+        warehouse="ECOMM_DEV_WH",
+        lag="1 minute",
+        refresh_mode="INCREMENTAL"
+    )
 
     # 4. Write Bad Data to Quarantine
     df_quarantine = df_validated.filter(F.col("is_valid") == False).select(
@@ -57,6 +62,11 @@ def process_customers(session):
         F.current_timestamp().alias("quarantined_at")
     )
     
-    # df_quarantine.write.mode("append").save_as_table("ECOMM_DEV.QUARANTINE.CUSTOMERS")
+    df_quarantine.create_or_replace_dynamic_table(
+        name="ECOMM_DEV.QUARANTINE.CUSTOMERS",
+        warehouse="ECOMM_DEV_WH",
+        lag="1 minute",
+        refresh_mode="INCREMENTAL"
+    )
     
     return "Pipeline execution complete"
