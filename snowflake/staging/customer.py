@@ -179,7 +179,6 @@ if __name__ == "__main__":
         connection_parameters["password"] = os.environ["SNOWFLAKE_PASSWORD"]
     elif "SNOWFLAKE_PRIVATE_KEY" in os.environ:
         # Snowpark expects the private key as bytes, and often requires the cryptography library
-        import rsa
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.backends import default_backend
         
