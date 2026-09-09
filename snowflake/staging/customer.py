@@ -40,9 +40,9 @@ CUSTOMER_ADDRESS_SCHEMA = {
 # ==============================================================================
 # 2. SNOWPARK DATAFRAME PIPELINES
 # ==============================================================================
-def process_customers(session):
+def process_customers(session, db_name, wh_name):
     # Ensure an internal stage exists to store the serialized Python UDFs permanently
-    session.sql("CREATE STAGE IF NOT EXISTS ECOMM_DEV.STAGING.UDF_STAGE").collect()
+    session.sql(f"CREATE STAGE IF NOT EXISTS {db_name}.STAGING.UDF_STAGE").collect()
 
     # Dynamically generate the Snowflake Validation UDFs
     val_customer = get_validator_udf(session, CUSTOMER_SCHEMA, "is_valid_customer")
@@ -50,7 +50,7 @@ def process_customers(session):
     val_address = get_validator_udf(session, CUSTOMER_ADDRESS_SCHEMA, "is_valid_address")
 
     # 1. Read the Raw Data (Filtering just for customers)
-    df_raw = session.table("ECOMM_DEV.RAW.RAW_DATA").filter(F.col("FILE_NAME").like("%customers.json%"))
+    df_raw = session.table(f"{db_name}.RAW.RAW_DATA").filter(F.col("FILE_NAME").like("%customers.json%"))
 
     # ==============================================================================
     # PIPELINE 1: CUSTOMER
@@ -64,8 +64,8 @@ def process_customers(session):
         F.col("LOADED_AT").alias("raw_loaded_at")
     )
     df_customer_clean.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.STAGING.CUSTOMER",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.STAGING.CUSTOMER",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -76,8 +76,8 @@ def process_customers(session):
         F.col("LOADED_AT").alias("raw_loaded_at"),
     )
     df_customer_quar.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.QUARANTINE.CUSTOMER",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.QUARANTINE.CUSTOMER",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -97,8 +97,8 @@ def process_customers(session):
         )
     )
     df_contact_clean.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.STAGING.CUSTOMER_CONTACT",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.STAGING.CUSTOMER_CONTACT",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -109,8 +109,8 @@ def process_customers(session):
         F.col("LOADED_AT").alias("raw_loaded_at"),
     )
     df_contact_quar.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.QUARANTINE.CUSTOMER_CONTACT",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.QUARANTINE.CUSTOMER_CONTACT",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -135,8 +135,8 @@ def process_customers(session):
         )
     )
     df_address_clean.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.STAGING.CUSTOMER_ADDRESS",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.STAGING.CUSTOMER_ADDRESS",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -147,8 +147,8 @@ def process_customers(session):
         F.col("LOADED_AT").alias("raw_loaded_at"),
     )
     df_address_quar.create_or_replace_dynamic_table(
-        name="ECOMM_DEV.QUARANTINE.CUSTOMER_ADDRESS",
-        warehouse="ECOMM_DEV_WH",
+        name=f"{db_name}.QUARANTINE.CUSTOMER_ADDRESS",
+        warehouse=wh_name,
         lag="1 minute",
         refresh_mode="AUTO"
     )
@@ -160,12 +160,16 @@ if __name__ == "__main__":
     from snowflake.snowpark import Session
     
     print("Initializing Snowpark session...")
+    env = os.environ.get("ENV", "DEV").upper()
+    db_name = f"ECOMM_{env}"
+    wh_name = f"ECOMM_{env}_WH"
+    
     connection_parameters = {
         "account": os.environ.get("SNOWFLAKE_ACCOUNT"),
         "user": os.environ.get("SNOWFLAKE_USER"),
         "role": os.environ.get("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
-        "warehouse": "ECOMM_DEV_WH",
-        "database": "ECOMM_DEV",
+        "warehouse": wh_name,
+        "database": db_name,
         "schema": "STAGING"
     }
     
@@ -191,5 +195,5 @@ if __name__ == "__main__":
         
     session = Session.builder.configs(connection_parameters).create()
     print("Session created. Executing process_customers...")
-    result = process_customers(session)
+    result = process_customers(session, db_name, wh_name)
     print(result)
