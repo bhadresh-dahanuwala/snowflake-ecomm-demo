@@ -10,7 +10,6 @@ CUSTOMER_SCHEMA = {
     "id":         {"mandatory": True,  "type": "int"},
     "first_name": {"mandatory": True,  "type": "string"},
     "last_name":  {"mandatory": True,  "type": "string"},
-    "email":      {"mandatory": False, "type": "string"},
 }
 
 CUSTOMER_CONTACT_SCHEMA = {
@@ -62,7 +61,6 @@ def process_customers(session):
         F.col("PAYLOAD")["id"].cast(IntegerType()).alias("customer_id"),
         F.col("PAYLOAD")["first_name"].cast(StringType()).alias("first_name"),
         F.col("PAYLOAD")["last_name"].cast(StringType()).alias("last_name"),
-        F.col("PAYLOAD")["email"].cast(StringType()).alias("email"),
         F.col("LOADED_AT").alias("raw_loaded_at")
     )
     df_customer_clean.create_or_replace_dynamic_table(
