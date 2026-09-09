@@ -159,3 +159,43 @@ def process_customers(session):
     )
 
     return "Pipeline execution complete"
+
+if __name__ == "__main__":
+    import os
+    from snowflake.snowpark import Session
+    
+    print("Initializing Snowpark session...")
+    connection_parameters = {
+        "account": os.environ.get("SNOWFLAKE_ACCOUNT"),
+        "user": os.environ.get("SNOWFLAKE_USER"),
+        "role": os.environ.get("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
+        "warehouse": "ECOMM_DEV_WH",
+        "database": "ECOMM_DEV",
+        "schema": "STAGING"
+    }
+    
+    # Handle authentication
+    if "SNOWFLAKE_PASSWORD" in os.environ:
+        connection_parameters["password"] = os.environ["SNOWFLAKE_PASSWORD"]
+    elif "SNOWFLAKE_PRIVATE_KEY" in os.environ:
+        # Snowpark expects the private key as bytes, and often requires the cryptography library
+        import rsa
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.backends import default_backend
+        
+        p_key = serialization.load_pem_private_key(
+            os.environ["SNOWFLAKE_PRIVATE_KEY"].encode(),
+            password=None,
+            backend=default_backend()
+        )
+        pkb = p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        connection_parameters["private_key"] = pkb
+        
+    session = Session.builder.configs(connection_parameters).create()
+    print("Session created. Executing process_customers...")
+    result = process_customers(session)
+    print(result)

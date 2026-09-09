@@ -1,0 +1,48 @@
+name: 'Snowpark Deploy'
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'snowflake/**'
+      - '.github/workflows/snowpark-deploy.yml'
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - 'snowflake/**'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-snowpark:
+    name: 'Deploy Snowpark Data Pipelines'
+    runs-on: ubuntu-latest
+
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      SNOWFLAKE_ROLE: "ACCOUNTADMIN"
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install snowflake-snowpark-python cryptography
+
+    - name: Deploy Staging/Quarantine Pipelines
+      # Only run actual deployment on pushes to dev, not just PRs
+      if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+      run: |
+        python snowflake/staging/customer.py
