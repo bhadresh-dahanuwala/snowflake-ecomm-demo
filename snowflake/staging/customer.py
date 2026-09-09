@@ -42,6 +42,9 @@ CUSTOMER_ADDRESS_SCHEMA = {
 # 2. SNOWPARK DATAFRAME PIPELINES
 # ==============================================================================
 def process_customers(session):
+    # Ensure an internal stage exists to store the serialized Python UDFs permanently
+    session.sql("CREATE STAGE IF NOT EXISTS ECOMM_DEV.STAGING.UDF_STAGE").collect()
+
     # Dynamically generate the Snowflake Validation UDFs
     val_customer = get_validator_udf(session, CUSTOMER_SCHEMA, "is_valid_customer")
     val_contact = get_validator_udf(session, CUSTOMER_CONTACT_SCHEMA, "is_valid_contact")

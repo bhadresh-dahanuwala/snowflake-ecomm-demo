@@ -43,12 +43,13 @@ def get_validator_udf(session, schema_dict: dict, udf_name: str = "generic_valid
             
         return _check(payload, schema_dict)
 
-    # Register the Python function as a Snowflake UDF
+    # Register the Python function as a permanent Snowflake UDF
     return session.udf.register(
         _validate_record,
         return_type=BooleanType(),
         input_types=[VariantType()],
         name=udf_name,
-        is_permanent=False,
+        is_permanent=True,
+        stage_location="@ECOMM_DEV.STAGING.UDF_STAGE",
         replace=True
     )
