@@ -76,7 +76,6 @@ def process_customers(session):
         F.col("PAYLOAD").alias("raw_record"),
         F.col("FILE_NAME"),
         F.col("LOADED_AT").alias("raw_loaded_at"),
-        F.current_timestamp().alias("quarantined_at")
     )
     df_customer_quar.create_or_replace_dynamic_table(
         name="ECOMM_DEV.QUARANTINE.CUSTOMER",
@@ -110,7 +109,6 @@ def process_customers(session):
         F.col("PAYLOAD").alias("raw_record"),
         F.col("FILE_NAME"),
         F.col("LOADED_AT").alias("raw_loaded_at"),
-        F.current_timestamp().alias("quarantined_at")
     )
     df_contact_quar.create_or_replace_dynamic_table(
         name="ECOMM_DEV.QUARANTINE.CUSTOMER_CONTACT",
@@ -149,7 +147,6 @@ def process_customers(session):
         F.col("PAYLOAD").alias("raw_record"),
         F.col("FILE_NAME"),
         F.col("LOADED_AT").alias("raw_loaded_at"),
-        F.current_timestamp().alias("quarantined_at")
     )
     df_address_quar.create_or_replace_dynamic_table(
         name="ECOMM_DEV.QUARANTINE.CUSTOMER_ADDRESS",
