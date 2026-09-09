@@ -59,10 +59,10 @@ def process_customers(session):
     df_customer_val = df_raw.with_column("is_valid", val_customer(F.col("PAYLOAD")))
 
     df_customer_clean = df_customer_val.filter(F.col("is_valid") == True).select(
-        F.try_cast(F.col("PAYLOAD")["id"], IntegerType()).alias("customer_id"),
-        F.try_cast(F.col("PAYLOAD")["first_name"], StringType()).alias("first_name"),
-        F.try_cast(F.col("PAYLOAD")["last_name"], StringType()).alias("last_name"),
-        F.try_cast(F.col("PAYLOAD")["email"], StringType()).alias("email"),
+        F.col("PAYLOAD")["id"].cast(IntegerType()).alias("customer_id"),
+        F.col("PAYLOAD")["first_name"].cast(StringType()).alias("first_name"),
+        F.col("PAYLOAD")["last_name"].cast(StringType()).alias("last_name"),
+        F.col("PAYLOAD")["email"].cast(StringType()).alias("email"),
         F.col("LOADED_AT").alias("raw_loaded_at")
     )
     df_customer_clean.create_or_replace_dynamic_table(
@@ -94,8 +94,8 @@ def process_customers(session):
         df_contact_val.filter(F.col("is_valid") == True)
         .flatten(F.col("PAYLOAD")["contact_numbers"])
         .select(
-            F.try_cast(F.col("PAYLOAD")["id"], IntegerType()).alias("customer_id"),
-            F.try_cast(F.col("VALUE"), StringType()).alias("contact_number"),
+            F.col("PAYLOAD")["id"].cast(IntegerType()).alias("customer_id"),
+            F.col("VALUE").cast(StringType()).alias("contact_number"),
             F.col("LOADED_AT").alias("raw_loaded_at")
         )
     )
@@ -128,13 +128,13 @@ def process_customers(session):
         df_address_val.filter(F.col("is_valid") == True)
         .flatten(F.col("PAYLOAD")["addresses"])
         .select(
-            F.try_cast(F.col("PAYLOAD")["id"], IntegerType()).alias("customer_id"),
-            F.try_cast(F.col("VALUE")["address_type"], StringType()).alias("address_type"),
-            F.try_cast(F.col("VALUE")["line_1"], StringType()).alias("line_1"),
-            F.try_cast(F.col("VALUE")["line_2"], StringType()).alias("line_2"),
-            F.try_cast(F.col("VALUE")["city"], StringType()).alias("city"),
-            F.try_cast(F.col("VALUE")["state"], StringType()).alias("state"),
-            F.try_cast(F.col("VALUE")["zip"], StringType()).alias("zip"),
+            F.col("PAYLOAD")["id"].cast(IntegerType()).alias("customer_id"),
+            F.col("VALUE")["address_type"].cast(StringType()).alias("address_type"),
+            F.col("VALUE")["line_1"].cast(StringType()).alias("line_1"),
+            F.col("VALUE")["line_2"].cast(StringType()).alias("line_2"),
+            F.col("VALUE")["city"].cast(StringType()).alias("city"),
+            F.col("VALUE")["state"].cast(StringType()).alias("state"),
+            F.col("VALUE")["zip"].cast(StringType()).alias("zip"),
             F.col("LOADED_AT").alias("raw_loaded_at")
         )
     )
