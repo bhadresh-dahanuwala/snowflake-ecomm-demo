@@ -69,7 +69,7 @@ def process_customers(session):
         name="ECOMM_DEV.STAGING.CUSTOMER",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     df_customer_quar = df_customer_val.filter(F.col("is_valid") == False).select(
@@ -81,7 +81,7 @@ def process_customers(session):
         name="ECOMM_DEV.QUARANTINE.CUSTOMER",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     # ==============================================================================
@@ -102,7 +102,7 @@ def process_customers(session):
         name="ECOMM_DEV.STAGING.CUSTOMER_CONTACT",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     df_contact_quar = df_contact_val.filter(F.col("is_valid") == False).select(
@@ -114,7 +114,7 @@ def process_customers(session):
         name="ECOMM_DEV.QUARANTINE.CUSTOMER_CONTACT",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     # ==============================================================================
@@ -140,7 +140,7 @@ def process_customers(session):
         name="ECOMM_DEV.STAGING.CUSTOMER_ADDRESS",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     df_address_quar = df_address_val.filter(F.col("is_valid") == False).select(
@@ -152,7 +152,7 @@ def process_customers(session):
         name="ECOMM_DEV.QUARANTINE.CUSTOMER_ADDRESS",
         warehouse="ECOMM_DEV_WH",
         lag="1 minute",
-        refresh_mode="INCREMENTAL"
+        refresh_mode="AUTO"
     )
 
     return "Pipeline execution complete"
