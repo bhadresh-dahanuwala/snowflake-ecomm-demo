@@ -48,7 +48,7 @@ def get_validator_udf(session, schema_dict: dict, udf_name: str = "generic_valid
         _validate_record,
         return_type=BooleanType(),
         input_types=[VariantType()],
-        name=udf_name,
+        name=["ECOMM_DEV", "STAGING", udf_name],
         is_permanent=True,
         immutable=True,
         stage_location="@ECOMM_DEV.STAGING.UDF_STAGE",
